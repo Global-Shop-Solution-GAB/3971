@@ -1,0 +1,258 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'Coded by: WAW
+'Date: 5/7/2015
+'This is a custom GAB script for High Voltage Supply that will display checkboxes and check them based on whether or not a customer is international
+'and if so show whether eastern or western hemisphere
+
+'open connection to the database
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+'declare local variables
+V.Local.sloc.Declare(String)
+V.Local.ssort.Declare(String)
+V.Local.sWestHempChk.Declare(String)
+V.Local.sEastHempChk.Declare(String)
+V.local.sint.Declare(String)
+V.Local.squotenum.Declare(String)
+V.Local.srecnum.Declare(String)
+V.local.ssql.Declare(String)
+V.Local.seastshow.Declare(String)
+V.Local.swestshow.Declare(String)
+V.Local.ordernum.Declare(String)
+V.Local.scheck.Declare(String)
+V.Local.sordersort.Declare(String)
+V.Local.sordernum.Declare(String)
+V.Local.ssort1check.Declare(String)
+V.Local.ssort1field.Declare(String)
+V.local.ssort1field2.Declare(String)
+
+'if the populate hook is fired on the estimating and routing screen ESTIMATING ROUTING>FILE>QUICK QUOTE>OPEN/NEW
+F.intrinsic.control.if(V.Caller.Hook,=,10710)
+
+	'set the local variables
+	V.Local.sWestHempChk.Set(V.Passed.GAB-CHK-1)
+	V.Local.sEastHempChk.Set(V.Passed.GAB-CHK-2)
+
+	'set the properties of the "international region" label
+	V.Passed.GAB-LBL-1.Set("International Region")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PL",719)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PT",514)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-LBL-1,"HIDE",0)
+
+	'set the properties of the eastern hemisphere checkbox
+	V.Passed.GAB-LBL-2.Set("Western Hemisphere")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PL",670)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PT",533)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PW",100)
+
+	F.Intrinsic.Variable.SetProperty("GAB-CHK-1","PL",648)
+	F.Intrinsic.Variable.SetProperty("GAB-CHK-1","PT",533)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"HIDE",0)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"LOCK",0)
+
+	'set the properties of the western hemisphere checkbox
+	V.Passed.GAB-LBL-3.Set("Eastern Hemisphere")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PL",810)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PT",533)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PW",100)
+
+	F.Intrinsic.Variable.SetProperty("GAB-CHK-2","PL",790)
+	F.Intrinsic.Variable.SetProperty("GAB-CHK-2","PT",533)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-2,"HIDE",0)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-2,"LOCK",0)
+
+F.Intrinsic.Control.EndIf
+
+'after a quote has been selected on the Open Quote Header Maintenance screen check the quote number and see if either of the boxes need to be checked accordingly
+F.Intrinsic.Control.If(V.Caller.Hook,=,10721)
+
+	V.Local.ssort1check.Set(V.Passed.000045)
+
+	F.Intrinsic.Control.If(V.passed.000045,=,"Western Hemisphere")
+		V.passed.GAB-CHK-1.Set("Y")
+		V.Passed.GAB-CHK-2.Set("N")
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.000045,"LOCK",1)
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-2,"LOCK",1)
+	F.Intrinsic.Control.ElseIf(V.passed.000045,=,"Eastern Hemisphere")
+		V.passed.GAB-CHK-2.Set("Y")
+		V.Passed.GAB-CHK-1.Set("N")
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.000045,"LOCK",1)
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"LOCK",1)
+
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.EndIf
+
+
+'iftheeasternhemispherecheckboxischeckedlockthewesterncheckboxandsortfield
+F.Intrinsic.Control.If(V.caller.Hook,=,10985)
+
+	V.Local.sWestHempChk.Set(V.Passed.GAB-CHK-1)
+	V.Local.sEastHempChk.Set(V.Passed.GAB-CHK-2)
+	V.Local.ssort1field.Set(V.Passed.000045)
+	F.Intrinsic.Control.If(V.Local.sWestHempChk.Trim,=,"Y")
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.GAB-CHK-2,"LOCK",1)
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.000045,"LOCK",1)
+'		V.Local.ssort1field.Set("Western Hemisphere")
+		V.Passed.000045.Set("Western Hemisphere")
+			F.intrinsic.control.elseif(V.Local.sWestHempChk.Trim,<>,"Y")
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.GAB-CHK-2,"LOCK",0)
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.000045,"LOCK",0)
+'		V.Local.ssort1field.Set("")
+		V.Passed.000045.Set("")
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+'if the western hemisphere checkbox is checked lock the sort field and the eatern hemisphere checkbox
+F.intrinsic.Control.If(V.Caller.Hook,=,10986)
+
+	V.Local.sWestHempChk.Set(V.Passed.GAB-CHK-1)
+	V.Local.sEastHempChk.Set(V.Passed.GAB-CHK-2)
+	V.local.ssort1field2.Set(V.Passed.000045)
+	F.Intrinsic.Control.If(V.Local.sEastHempChk.Trim,=,"Y")
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"LOCK",1)
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.000045,"LOCK",1)
+		V.Passed.000045.Set("Eastern Hemisphere")
+'		V.Local.ssort1field2.Set("Eastern Hemisphere")
+	F.Intrinsic.control.EndIf
+	F.Intrinsic.Control.If(V.Local.sEastHempChk.Trim,<>,"Y")
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"LOCK",0)
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.000045,"LOCK",0)
+'		V.Local.ssort1field2.Set("")
+		V.Passed.000045.Set("")
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+'if the save button is clicked
+F.Intrinsic.Control.If(V.Caller.Hook,=,10922)
+
+	'set the local variables
+	V.Local.sWestHempChk.Set(V.Passed.GAB-CHK-1)
+	V.Local.sEastHempChk.Set(V.Passed.GAB-CHK-2)
+
+	'set the local variables
+	V.Local.sloc.Set(V.Passed.000065)
+	V.Local.ssort.Set(V.Passed.000045)
+	V.Local.squotenum.Set(V.Passed.000003)
+	'pad the quote number
+	F.Intrinsic.String.LPad(V.Local.squotenum,"0",7,V.Local.squotenum)
+
+	'and if there is not a 7 in the location field
+	F.Intrinsic.Control.If(V.Local.sloc.Trim,=,7)
+		F.intrinsic.Control.AndIf(V.Local.sEastHempChk.Trim,<>,"Y")
+		F.Intrinsic.Control.AndIf(V.Local.sWestHempChk.Trim,<>,"Y")
+		F.Intrinsic.UI.Msgbox("Please check Western or Eastern Hemisphere")
+		V.Passed.777777.Set(1)
+		F.Intrinsic.Control.ExitSub
+'	F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.Control.elseIf(V.Local.sloc.Trim,=,7)
+
+	F.Intrinsic.Control.andIf(V.Local.sEastHempChk.Trim,=,"Y")
+
+			'if the eastern hemisphere checkbox is checked, insert Eastern Hemisphere into the CODE_SORT field on QUOTE HEADER
+			V.Local.ssort.Set("Eastern Hemisphere")
+			V.Passed.000045.Set("Eastern Hemisphere")
+
+		'else if the western hemisphere checkbox is checked, insert western hemisphere into the CODE_SORT field on QUOTE_HEADER
+		F.intrinsic.Control.Elseif(V.Local.sWestHempChk.Trim,=,"Y")
+			V.Local.ssort.Set("Western Hemisphere")
+			V.Passed.000045.Set("Western Hemisphere")
+		F.Intrinsic.Control.EndIf
+'	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+'if the order entry screen is populated ORDER ENTRY>FILE>SALES ORDERS>OPEN/NEW
+F.Intrinsic.Control.if(V.Caller.Hook,=,11560)
+
+	'set the properties of the "international region" label
+	V.Passed.GAB-LBL-1.Set("International Region")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PL",688)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PT",562)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-LBL-1,"HIDE",0)
+
+	'set the properties of the eastern hemisphere checkbox
+	V.Passed.GAB-LBL-2.Set("Eastern Hemisphere")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PL",628)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PT",576)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PW",100)
+
+	F.Intrinsic.Variable.SetProperty("GAB-CHK-1","PL",608)
+	F.Intrinsic.Variable.SetProperty("GAB-CHK-1","PT",576)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"HIDE",0)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"LOCK",1)
+
+	'set the properties of the western hemisphere checkbox
+	V.Passed.GAB-LBL-3.Set("Western Hemisphere")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PL",765)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PT",576)
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PW",100)
+
+	F.Intrinsic.Variable.SetProperty("GAB-CHK-2","PL",740)
+	F.Intrinsic.Variable.SetProperty("GAB-CHK-2","PT",576)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-2,"HIDE",0)
+	F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-2,"LOCK",1)
+
+F.Intrinsic.Control.EndIf
+
+'if a sales order is selected, look at the Order Sort and check the appropriate box based on the text
+F.Intrinsic.Control.If(V.Caller.Hook,=,11565)
+
+	V.Local.seastshow.set(V.Passed.GAB-CHK-1)
+	V.Local.swestshow.Set(V.Passed.GAB-CHK-2)
+	V.Local.sordernum.Set(V.Passed.000003)
+	'pad the order number
+	F.Intrinsic.String.LPad(V.Local.sordernum,"0",7,V.Local.sordernum)
+
+		F.Intrinsic.string.Build("SELECT a.CODE_SORT, a.QUOTE_NO, b.ORDER_NO from V_QUOTE_HEADER a left outer join V_ORDER_HEADER b on a.QUOTE_NO = b.QUOTE where b.ORDER_NO = '{0}'",V.Local.sordernum,V.Local.ssql)
+		F.ODBC.Connection!con.OpenRecordsetRO("rst",V.Local.ssql)
+		F.intrinsic.Control.If(V.ODBC.con!rst.EOF,<>,True)
+			V.Local.sordersort.Set(V.ODBC.con!rst.FieldValTrim!CODE_SORT)
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rst.Close
+	
+	F.Intrinsic.Control.If(V.Local.sordersort,=,"Western Hemisphere")
+		V.passed.GAB-CHK-2.Set("Y")
+		V.Passed.GAB-CHK-1.Set("N")
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.000045,"LOCK",1)
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"LOCK",1)
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-2,"LOCK",1)
+	F.Intrinsic.Control.ElseIf(V.Local.sordersort,=,"Eastern Hemisphere")
+		V.passed.GAB-CHK-1.Set("Y")
+		V.Passed.GAB-CHK-2.Set("N")
+		F.Intrinsic.UI.ChangeCallerProperty(V.passed.000045,"LOCK",1)
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-1,"LOCK",1)
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-CHK-2,"LOCK",1)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.ODBC.Connection!con.close
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3971_INT_INFO.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.Comments.Start
+${$0$}$GCG_INT_INFO$}$WAW$}$5/7/2015
+Program.Sub.Comments.End
+
